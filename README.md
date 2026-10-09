@@ -20,15 +20,16 @@ The cashback rate (0.5%) is computed by the project; the Stacker stakes whatever
 The launch deploys the three contracts in the order below and records them under their Solidity
 names. The confirmed addresses come from the deployment handoff; nothing here invents one.
 
-| Contract   | Solidity name | Address                                  |
-|------------|---------------|------------------------------------------|
-| Test IMD   | `TestIMD`     | _filled in by the launch handoff_        |
-| Test sIMD  | `TestSIMD`    | _filled in by the launch handoff_        |
-| Stacker    | `Stacker`     | _filled in by the launch handoff_        |
+| Contract   | Solidity name | Address                                                                                                                          |
+|------------|---------------|----------------------------------------------------------------------------------------------------------------------------------|
+| Test IMD   | `TestIMD`     | [`0x2b69099e59b05901faa1dd164fabf098bf831e82`](https://sepolia.etherscan.io/address/0x2b69099e59b05901faa1dd164fabf098bf831e82) |
+| Test sIMD  | `TestSIMD`    | [`0xf9e2eec3b610ec6781f7438ac5fb4bc049d81cc1`](https://sepolia.etherscan.io/address/0xf9e2eec3b610ec6781f7438ac5fb4bc049d81cc1) |
+| Stacker    | `Stacker`     | [`0x293c7134ab8f6bf1d8ff44ed806575f8f1baf477`](https://sepolia.etherscan.io/address/0x293c7134ab8f6bf1d8ff44ed806575f8f1baf477) |
 
-Owner of `TestSIMD`: `0x4b91078b2374c956A65F7Af0999CaE0a935E6821` (from the brief).
-The PLEA job reuses these three addresses; once the handoff lands, paste them into the table above
-and into `site/config.json`.
+Launch 1129, source commit `934fb40`, all three deployed in block 11,874,601 (the Stacker's
+deployment block is where the page's log scan starts). Owner of `TestSIMD`:
+`0x4b91078b2374c956A65F7Af0999CaE0a935E6821` (from the brief). The PLEA job reuses these three
+addresses; they are also in `site/public/config.json`.
 
 ## Deployment parameters
 
@@ -114,42 +115,94 @@ try Stacker(stacker).credit(trader, cashback) returns (uint256 shares) {
 `test/Stacker.t.sol` contains `MockProjectHook`, exactly this pattern, exercised against a paused
 vault and a revoked allowance.
 
-## Page — `site/`
+## Page — `site/` → `dist/`
 
-Static, no build step, no JavaScript dependency (a small JSON-RPC client over public Sepolia RPCs
-for reads, `window.ethereum` for transactions). Pin the `site/` directory to IPFS under the label
-`imd-acc-test`.
+Static single page, Vite + TypeScript, no framework and no wallet library: a small JSON-RPC client
+over public Sepolia RPCs for reads, `window.ethereum` (EIP-1193) for transactions. The production
+export lives in `dist/` and is committed; the publisher serves it as is under the IPFS label
+`imd-acc-test` (see `artifacts/hosting.json`). All asset URLs are relative, so the export works
+from a gateway subpath or an ENS name.
 
+- **Wallet**: connect, automatic switch (or add) to Sepolia 11155111, a network badge, a
+  "Switch to Sepolia" button whenever the wallet is on another chain; account and chain changes
+  re-render without a reload.
 - **Your stack**: IMD stacked (on-chain `traderStacked`), points, tsIMD held and its IMD value now
-  (`balanceOf` + `convertToAssets`), split per project with a "listed" or "direct, no points" pill.
-- **Listed projects**: `site/projects.json`, an array of `{ "address", "name", "fromBlock" }`.
+  (`balanceOf` + `convertToAssets`), tIMD balance, and a per-project split with a "listed" or
+  "direct, no points" pill.
+- **Listed projects**: `site/public/projects.json`, an array of `{ "address", "name", "fromBlock" }`.
   It starts empty; PLEA's hook is added later by a site update. Points and leaderboards count only
   `Stacked` events whose `project` is listed and whose block is ≥ that project's `fromBlock`.
 - **Points**: 1 point per IMD stacked through a listed project (an assumption; the brief does not
   define the rate). Direct stacks earn none but still receive real tsIMD.
 - **Leaderboards**: top stackers (by points) and top listed projects (by IMD stacked), computed from
-  `Stacked` logs read in block chunks (`logChunk`, halved automatically when an RPC rejects the
-  range) and cached in `localStorage` with a 12-block reorg margin.
-- **Test tools**: faucet, and "stack to myself" (`approve` then `credit(self, x)`), shown as direct.
-- **Addresses** with explorer links, and the vault's paused/open state.
+  `Stacked` logs read in block chunks from block 11,874,601 (`logChunk`, halved automatically when an
+  RPC rejects the range) and cached in `localStorage` with a 12-block reorg margin. A "Recent
+  stacks" table lists the last ten events of any kind.
+- **Test tools**: faucet (button disabled until `nextFaucetAt`, which is shown), and "Stack to
+  myself" (`approve` if the allowance is short, then `credit(you, amount)`), shown as direct. Each
+  button has its own pending / confirmed / failed status line with the Etherscan link; contract
+  errors (`FaucetCooldown`, `DepositMoreThanMax`, allowance, balance, rejection) are translated into
+  plain sentences.
+- **Contracts**: the three addresses with explorer links, the vault's open / paused pill and totals.
+- Light and dark (OS preference plus a toggle), keyboard-accessible, no horizontal scroll at 320 px.
 
-`site/config.json` holds the chain, explorer, RPC list, the three addresses and the Stacker's
-deployment block (`stackerDeployBlock`, where the log scan starts).
+`site/public/config.json` holds the chain, explorer, RPC list, the three addresses and
+`stackerDeployBlock`; it is copied verbatim into `dist/` and read at run time, so the exported copy
+can be edited without rebuilding. `DESIGN.md` documents the tokens and components.
+
+### Install, preview, rebuild, publish
+
+```
+cd site
+npm install            # vite + typescript only (lockfile: site/package-lock.json)
+npm run dev            # live-reload dev server
+npm run typecheck      # tsc --noEmit
+npm run build          # writes ../dist (relative asset URLs)
+npm run preview        # serves ../dist locally
+```
+
+Publish: pin the `dist/` directory to IPFS under the label `imd-acc-test` and point the gateway or
+ENS name at the directory root (`index.html`). The CIDv1 computed locally for the committed export is
+`bafybeic2skjuhsi5le5kt4sfya7sitdbn4g2jpctfzosxjdvt45iuxwyr4` (ipfs-car default chunking; a service
+with other chunking settings yields a different CID for the same bytes). After editing
+`projects.json` or `config.json`, rebuild (or edit the copies in `dist/`) and re-pin.
+
+ABI check: selectors in `site/src/main.ts` were produced with `cast sig` from this source, and the
+keccak256 of each contract's key-sorted compact ABI JSON from `forge build` equals the `abiHash`
+recorded for the launch (`71bcbb02…`, `1a05f7fd…`, `d10f6f3d…`).
+
+### Validation (this job)
+
+Full record with commands, observations and screenshots: `artifacts/validation.md`,
+`artifacts/screenshots/`. Summary:
+
+- `npm run typecheck` and `npm run build` exit 0; the export was served from a local subpath and
+  loaded with 0 console errors and all resources 200.
+- Live Sepolia reads in Chromium: status, vault state "Open", totals, log scan from 11,874,601, the
+  three explorer links. Desktop 1280 px light and dark screenshots.
+- Faucet → approve → credit → stack and leaderboard update were exercised in the real browser, but
+  against an **anvil fork of Sepolia** at the live addresses with an injected test wallet: no funded
+  Sepolia key exists on the build machine, so nothing was broadcast to Sepolia itself. Observed:
+  10,000 tIMD minted and the next faucet time shown, 100 tIMD stacked (two steps), per-project
+  "direct, no points", recent stacks and vault totals updated, points and both leaderboards populated
+  once a project was listed, error and rejection states, `accountsChanged` / `chainChanged`.
+- 320 px and 360 px: no horizontal overflow; keyboard focus ring visible; light and dark rendered.
+- Not performed: screen-reader session, native 200 % zoom, RTL, forced colors, pinning to IPFS from
+  this machine.
 
 ## After launch (owner / operator checklist)
 
-1. **Addresses**: paste the three handoff addresses into this README and `site/config.json`
-   (`addresses.testIMD`, `addresses.testSIMD`, `addresses.stacker`), and set `stackerDeployBlock`
-   to the Stacker's deployment block.
+1. **Addresses**: done. The three launch addresses and `stackerDeployBlock` 11874601 are in this
+   README and `site/public/config.json` (and the committed `dist/config.json`).
 2. **Explorer verification**: `forge verify-contract` each contract on Sepolia Etherscan with the
    constructor arguments above (compiler 0.8.26, optimizer 10,000 runs, EVM cancun).
-3. **Pin the site**: pin `site/` to IPFS with label `imd-acc-test`.
+3. **Pin the site**: pin `dist/` to IPFS with label `imd-acc-test` (`artifacts/hosting.json`).
 4. **List PLEA**: when PLEA's hook is live, add `{ "address", "name": "PLEA", "fromBlock" }` to
-   `site/projects.json` and re-pin.
+   `site/public/projects.json`, rebuild and re-pin.
 5. **Vault owner duties** (`0x4b91…6821`): `setPaused(true/false)` to rehearse integrator failure
    handling, `rescueERC20`/`rescueETH` only for stuck-funds emergencies, `renounceOwnership()` when
    the test run should become trustless (unpause first). The owner is a trusted party until then.
-6. **Public RPCs**: the list in `site/config.json` is best-effort; swap endpoints if one degrades.
+6. **Public RPCs**: the list in `site/public/config.json` is best-effort; swap endpoints if one degrades.
 
 There are no owner-settable values in the contracts; every dependency is a constructor argument
 known at launch (the brief gives the owner, the other two are earlier contracts of this launch).
@@ -232,6 +285,10 @@ foundry.toml  remappings.txt
 src/      TestIMD.sol  TestSIMD.sol  Stacker.sol
 script/   Deploy.s.sol
 test/     Base.t.sol  TestIMD.t.sol  TestSIMD.t.sol  Stacker.t.sol  StackerInvariant.t.sol  Deployment.t.sol
-site/     index.html  app.js  style.css  config.json  projects.json
+site/     index.html  src/main.ts  src/style.css  public/config.json  public/projects.json
+          package.json  package-lock.json  vite.config.ts  tsconfig.json
+dist/     committed production export (index.html, assets/, config.json, projects.json)
+artifacts/ validation.md  hosting.json  screenshots/
+DESIGN.md design tokens, typography, components and responsive behavior of the page
 lib/      forge-std  openzeppelin-contracts  solady
 ```

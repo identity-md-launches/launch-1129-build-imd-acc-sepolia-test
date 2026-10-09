@@ -1,0 +1,20 @@
+{
+  "label": "imd-acc-test",
+  "chainId": 11155111,
+  "chainIdHex": "0xaa36a7",
+  "chainName": "Sepolia",
+  "explorer": "https://sepolia.etherscan.io",
+  "rpcs": [
+    "https://ethereum-sepolia-rpc.publicnode.com",
+    "https://rpc.sepolia.ethpandaops.io",
+    "https://sepolia.rpc.sentio.xyz"
+  ],
+  "addresses": {
+    "testIMD": "0x2b69099e59b05901faa1dd164fabf098bf831e82",
+    "testSIMD": "0xf9e2eec3b610ec6781f7438ac5fb4bc049d81cc1",
+    "stacker": "0x293c7134ab8f6bf1d8ff44ed806575f8f1baf477"
+  },
+  "stackerDeployBlock": 11874601,
+  "logChunk": 5000,
+  "leaderboardSize": 20
+}

@@ -1,0 +1,17 @@
+{
+  "name": "imd-acc-test-site",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "imd/acc Sepolia test page: stack, points, leaderboards and test tools against the live launch #1129 contracts.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vite": "^7.1.0"
+  }
+}
