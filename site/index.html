@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>imd/acc — Sepolia test run</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>imd/acc <span class="tag">Sepolia test run</span></h1>
+    <p class="lede">
+      0.5% trading cashback paid to traders as staked IMD. A project funds it from its own fees:
+      it calls <code>Stacker.credit(trader, imd)</code>, the IMD is staked and the
+      <code>tsIMD</code> shares go straight to the trader.
+    </p>
+    <div id="status" class="status">Loading…</div>
+  </header>
+
+  <main>
+    <section id="contracts">
+      <h2>Contracts</h2>
+      <table class="kv">
+        <tr><th>TestIMD (tIMD)</th><td id="addr-imd">—</td></tr>
+        <tr><th>TestSIMD (tsIMD)</th><td id="addr-simd">—</td></tr>
+        <tr><th>Stacker</th><td id="addr-stacker">—</td></tr>
+      </table>
+      <p class="muted" id="vault-state"></p>
+    </section>
+
+    <section id="wallet">
+      <h2>Your stack</h2>
+      <div class="row">
+        <button id="btn-connect">Connect wallet</button>
+        <span id="account" class="mono"></span>
+      </div>
+      <div id="stack" class="hidden">
+        <table class="kv">
+          <tr><th>IMD stacked (all projects)</th><td id="my-stacked">—</td></tr>
+          <tr><th>Points (listed projects only)</th><td id="my-points">—</td></tr>
+          <tr><th>tsIMD held</th><td id="my-shares">—</td></tr>
+          <tr><th>IMD value now</th><td id="my-value">—</td></tr>
+          <tr><th>tIMD balance</th><td id="my-imd">—</td></tr>
+        </table>
+        <h3>Per project</h3>
+        <table class="list" id="my-projects">
+          <thead><tr><th>Project</th><th>IMD stacked</th><th>Shares</th><th>Points</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="tools">
+      <h2>Test tools</h2>
+      <div class="row">
+        <button id="btn-faucet" disabled>Faucet: mint 10,000 tIMD</button>
+        <span id="faucet-info" class="muted"></span>
+      </div>
+      <div class="row">
+        <input id="stack-amount" type="text" inputmode="decimal" placeholder="tIMD amount" value="100">
+        <button id="btn-stack" disabled>Stack to myself (approve + credit)</button>
+        <span class="muted">Shown as <em>direct, no points</em>: you are the project.</span>
+      </div>
+      <pre id="tx-log" class="log"></pre>
+    </section>
+
+    <section id="leaderboards">
+      <h2>Leaderboards</h2>
+      <p class="muted" id="scan-info">Scanning Stacked events…</p>
+      <div class="cols">
+        <div>
+          <h3>Top stackers</h3>
+          <table class="list" id="top-traders">
+            <thead><tr><th>#</th><th>Trader</th><th>IMD stacked</th><th>Points</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div>
+          <h3>Top listed projects</h3>
+          <table class="list" id="top-projects">
+            <thead><tr><th>#</th><th>Project</th><th>IMD stacked</th><th>Traders</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <h3>Listed projects</h3>
+      <table class="list" id="listed">
+        <thead><tr><th>Name</th><th>Address</th><th>From block</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="notes">
+      <h2>How points work</h2>
+      <ul>
+        <li>Every <code>Stacked(project, trader, imd, shares)</code> event from the Stacker is read from the chain in block chunks.</li>
+        <li>Only events whose <code>project</code> is in <code>projects.json</code>, at or after that project's <code>fromBlock</code>, earn points: 1 point per IMD stacked.</li>
+        <li>Everything else is shown as <em>direct, no points</em>. It still stacks real tsIMD to the trader.</li>
+        <li>Leaderboards only count listed projects.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <p class="muted">Static page, no backend: reads go to public Sepolia RPCs, transactions go through your wallet.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
