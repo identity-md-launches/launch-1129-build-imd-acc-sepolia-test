@@ -1,0 +1,24 @@
+{
+  "kind": "evm_contracts",
+  "contracts": [
+    {
+      "contract": "TestIMD",
+      "constructorArgs": []
+    },
+    {
+      "contract": "TestSIMD",
+      "constructorArgs": [
+        "$contract:TestIMD",
+        "0x4b91078b2374c956A65F7Af0999CaE0a935E6821"
+      ]
+    },
+    {
+      "contract": "Stacker",
+      "constructorArgs": [
+        "$contract:TestIMD",
+        "$contract:TestSIMD"
+      ]
+    }
+  ],
+  "notes": "imd/acc Sepolia test run, contracts only (no token, no pool). TestIMD: 18-decimal ERC20 'Test IMD'/tIMD with no premint, no owner and no admin; faucet() mints 10,000 tIMD to the caller once per 24h per address. TestSIMD(asset_, owner_): fork of the POOL4 StakedIMD vault (Ethereum 0x9efa934d9fad4ae28c998a40195646b965a97247) with only the name/symbol changed to 'Test Staked IMD'/tsIMD; asset_ is the TestIMD deployed first in this launch, owner_ is the owner the brief states, 0x4b91078b2374c956A65F7Af0999CaE0a935E6821, written as a static address so the vault owner is that wallet and not the factory. The owner keeps the original setPaused / rescueERC20 / rescueETH / renounceOwnership powers so integrators can rehearse against a failing (paused) vault. Stacker(imd, sImd): immutable, ownerless, feeless cashback funnel; its constructor requires sImd.asset() == imd and grants the vault a one-time max IMD allowance. credit(trader, imdAmount) pulls IMD from msg.sender (the project), deposits it into the vault with the trader as share recipient, records traderStacked / projectStacked / stackedBy / totalStacked and per-trader and per-project shares, and emits Stacked(project, trader, imd, shares). Deployment order is the constructor dependency order: TestIMD, then TestSIMD, then Stacker. No ETH is sent, no initialization call is needed, and the factory (constructor msg.sender) receives no role in any contract."
+}
